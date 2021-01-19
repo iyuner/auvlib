@@ -184,7 +184,6 @@ struct received_beam{
     }
 };
 
-typedef Eigen::Matrix<double, 7, 1> Vector7d;
 struct all_raw_range_and_beam_angle {
 
     using EntriesT = std::vector<all_raw_range_and_beam_angle, Eigen::aligned_allocator<all_raw_range_and_beam_angle> >;
@@ -195,7 +194,6 @@ struct all_raw_range_and_beam_angle {
     int sound_vel_;                  // sound speed at transducer in 0.1 m/s
     unsigned int D_scale_;
     std::vector<received_beam> received_beam_;
-    // std::vector<Vector7d, Eigen::aligned_allocator<Vector7d> > received_beam_;
     bool first_in_file_;
 
 	template <class Archive>
