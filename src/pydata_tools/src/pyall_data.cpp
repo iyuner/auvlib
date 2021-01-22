@@ -144,7 +144,7 @@ PYBIND11_MODULE(all_data, m) {
     m.def("convert_sound_speeds", &convert_sound_speeds, "Convert all_mbes_ping::PingsT to csv_asvp_sound_speed::EntriesT");
     m.def("convert_attitudes", &convert_attitudes, "Convert all_nav_attitude::EntriesT to std_data::attitude_entry::EntriesT");
     m.def("raw_range_and_beam_angle_convert_to_pings", &raw_range_and_beam_angle_convert_to_pings, "Convert raw_range_and_beam_angle_convert_to_pings::EntriesT to all_mbes_ping::PingsT");
-    m.def("raw_pings_match_attitude_and_entries", &raw_pings_match_attitude_and_entries, "TBD");
+    // m.def("raw_pings_match_attitude_and_entries", &raw_pings_match_attitude_and_entries, "TBD");
     m.def("raw_pings_add_transducer_depth_and_heading_to_pings", &raw_pings_add_transducer_depth_and_heading_to_pings, "TBD");
     
 

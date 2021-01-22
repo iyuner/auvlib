@@ -209,10 +209,10 @@ std_data::mbes_ping::PingsT match_attitude(std_data::mbes_ping::PingsT& pings, a
 csv_data::csv_asvp_sound_speed::EntriesT convert_sound_speeds(const all_mbes_ping::PingsT& pings);
 std_data::attitude_entry::EntriesT convert_attitudes(const all_nav_attitude::EntriesT& attitudes);
 
-all_data::all_mbes_ping::PingsT raw_range_and_beam_angle_convert_to_pings(all_raw_range_and_beam_angle::EntriesT & raws);
-std_data::mbes_ping::PingsT raw_pings_match_attitude_and_entries(all_mbes_ping::PingsT& pings, all_nav_attitude::EntriesT& attitude_entries, all_nav_entry::EntriesT& entries);
-all_mbes_ping::PingsT raw_pings_add_transducer_depth_and_heading_to_pings(all_mbes_ping::PingsT & raw_pings, all_mbes_ping::PingsT& depth_pings);
-
+all_mbes_ping::PingsT raw_range_and_beam_angle_convert_to_pings(all_raw_range_and_beam_angle::EntriesT & raws, all_nav_attitude::EntriesT& attitude_entries);
+all_mbes_ping::PingsT raw_pings_add_transducer_depth_and_heading_to_pings(all_mbes_ping::PingsT & raw_pings, all_nav_entry::EntriesT& entries);
+// std_data::mbes_ping::PingsT raw_pings_match_attitude_and_entries(all_mbes_ping::PingsT& pings, all_nav_attitude::EntriesT& attitude_entries, all_nav_entry::EntriesT& entries);
+// all_data::unfolded_attitude::EntriesT get_sorted_unfolded_attitude(all_nav_attitude::EntriesT& entries);
 
 class StreamParser {
 private:

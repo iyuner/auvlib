@@ -482,38 +482,35 @@ mbes_ping::PingsT convert_matched_entries(all_mbes_ping::PingsT& pings, all_nav_
     return new_pings;
 }
 
+//unfolded_attitude::EntriesT get_sorted_unfolded_attitude(all_nav_attitude::EntriesT& entries){
+//    unfolded_attitude::EntriesT attitudes;
+//    for (const all_nav_attitude& entry : entries) {
+//        for (const all_nav_attitude_sample& sample : entry.samples) {
+//            unfolded_attitude attitude;
+//            attitude.roll = sample.roll;
+//            attitude.pitch = sample.pitch;
+//            attitude.heading = sample.heading;
+//            attitude.heave = sample.heave;
+//            attitude.time_stamp_ = entry.time_stamp_ + sample.ms_since_start;
+//            attitudes.push_back(attitude);
+//        }
+//    }
+//    // fix the bug here. should sort attitudes, instead of entries
+//    std::stable_sort(attitudes.begin(), attitudes.end(), [](const unfolded_attitude& entry1, const unfolded_attitude& entry2) {
+//        return entry1.time_stamp_ < entry2.time_stamp_;
+//    });
+//    return attitudes;
+//}
+
 mbes_ping::PingsT match_attitude(mbes_ping::PingsT& pings, all_nav_attitude::EntriesT& entries)
 {
-    struct unfolded_attitude {
-        long long time_stamp_; // posix time stamp
-        double roll;
-        double pitch;
-        double heading;
-        double heave;
-    };
-
-    vector<unfolded_attitude> attitudes;
-    unfolded_attitude attitude;
-    for (const all_nav_attitude& entry : entries) {
-        for (const all_nav_attitude_sample& sample : entry.samples) {
-            attitude.roll = sample.roll;
-            attitude.pitch = sample.pitch;
-            attitude.heading = sample.heading;
-            attitude.heave = sample.heave;
-            attitude.time_stamp_ = entry.time_stamp_ + sample.ms_since_start;
-            attitudes.push_back(attitude);
-        }
-    }
+    std_data::attitude_entry::EntriesT attitudes = convert_attitudes(entries);
 
     mbes_ping::PingsT new_pings = pings;
 
-    std::stable_sort(entries.begin(), entries.end(), [](const all_nav_attitude& entry1, const all_nav_attitude& entry2) {
-        return entry1.time_stamp_ < entry2.time_stamp_;
-    });
-
     auto pos = attitudes.begin();
     for (mbes_ping& ping : new_pings) {
-        pos = std::find_if(pos, attitudes.end(), [&](const unfolded_attitude& entry) {
+        pos = std::find_if(pos, attitudes.end(), [&](const attitude_entry& entry) {
             return entry.time_stamp_ > ping.time_stamp_;
         });
 
@@ -531,7 +528,7 @@ mbes_ping::PingsT match_attitude(mbes_ping::PingsT& pings, all_nav_attitude::Ent
                 heave = pos->heave;
         }
         else {
-            unfolded_attitude& previous = *(pos - 1);
+            attitude_entry& previous = *(pos - 1);
             double ratio = double(ping.time_stamp_ - previous.time_stamp_)/double(pos->time_stamp_ - previous.time_stamp_);
             ping.pitch_ = previous.pitch + ratio*(pos->pitch - previous.pitch);
             ping.roll_ = previous.roll + ratio*(pos->roll - previous.roll);
@@ -626,7 +623,7 @@ std_data::attitude_entry::EntriesT convert_attitudes(const all_nav_attitude::Ent
 // ------------------------------------------------------------------------------------------------------------------------------------------------
 // ------------------------------------------------                   New added          ----------------------------------------------------------
 // ------------------------------------------------------------------------------------------------------------------------------------------------
-all_mbes_ping::PingsT raw_range_and_beam_angle_convert_to_pings(all_raw_range_and_beam_angle::EntriesT & raws){
+all_mbes_ping::PingsT raw_range_and_beam_angle_convert_to_pings(all_raw_range_and_beam_angle::EntriesT & raws, all_nav_attitude::EntriesT& attitude_entries){
     // according to the RX array offset in Appendix A of all file specification
     // unit in m.
     double offset_x = 0.11; // positive direction is forward
@@ -643,14 +640,13 @@ all_mbes_ping::PingsT raw_range_and_beam_angle_convert_to_pings(all_raw_range_an
         ping.sound_vel_ = raw.sound_vel_; // both are in 0.1 m/s
         // std::vector<Eigen::Vector3d,> beams;
         for (auto & beam: raw.received_beam_){
-            // beam[0]: beam_pointing_angle_ in 0.01 degree
-            // beam[5]: two_way_tranvel_time_ in s
-            // beam[6]: reflectivity_
-            double beam_pointing_angle_ = beam[0] * 0.01 / 180.0 * M_PI; // unit 1 rad
-            double one_way_distance = 0.1* raw.sound_vel_ * 0.5 * beam[5]; // in m
+            // beam_pointing_angle_ in 0.01 degree
+            // two_way_tranvel_time_ in s
+            double beam_pointing_angle_ = beam.beam_pointing_angle_ * 0.01 / 180.0 * M_PI; // unit 1 rad
+            double one_way_distance = 0.1* raw.sound_vel_ * 0.5 * beam.two_way_tranvel_time_; // in m
             Eigen::Vector3d point(offset_x + 0, offset_y + one_way_distance*sin(beam_pointing_angle_), offset_z + -one_way_distance*cos(beam_pointing_angle_));
             ping.beams.push_back(point);
-            ping.reflectivities.push_back(beam[6]);
+            ping.reflectivities.push_back(beam.reflectivity_);
         }
         // miss heading and transducer_depth_ (will add those info later after matching 
         // with all_nav_attitude and all_nav_entry
@@ -659,25 +655,76 @@ all_mbes_ping::PingsT raw_range_and_beam_angle_convert_to_pings(all_raw_range_an
 
         pings.push_back(ping);
     }
+    
+    //
+
+    // apply roll/pitch correction
+    std_data::attitude_entry::EntriesT attitudes = convert_attitudes(attitude_entries);
+    auto pos = attitudes.begin();
+    for (all_mbes_ping& ping : pings) {
+        pos = std::find_if(pos, attitudes.end(), [&](const attitude_entry& entry) {
+            return entry.time_stamp_ > ping.time_stamp_;
+        });
+
+        double pitch_ = 0.;
+        double roll_ = 0.;
+        double yaw_ = 0.;
+        double heave;
+        if (pos == attitudes.end()) {
+            pitch_ = attitudes.back().pitch;
+            roll_ = attitudes.back().roll;
+            yaw_ = attitudes.back().yaw;
+            heave = attitudes.back().heave;
+        }
+        else if (pos == attitudes.begin()) {
+                pitch_ = pos->pitch;
+                roll_ = pos->roll;
+                yaw_ = pos->yaw;
+                heave = pos->heave;
+        }
+        else {
+            attitude_entry& previous = *(pos - 1);
+            double ratio = double(ping.time_stamp_ - previous.time_stamp_)/double(pos->time_stamp_ - previous.time_stamp_);
+            pitch_ = previous.pitch + ratio*(pos->pitch - previous.pitch);
+            roll_ = previous.roll + ratio*(pos->roll - previous.roll);
+            yaw_ = previous.yaw + ratio*(pos->yaw - previous.yaw);
+            heave = previous.heave + ratio*(pos->heave - previous.heave);
+        }
+        //ping.pitch_ *= -1.;
+        //ping.roll_ *= -1.;
+
+        Eigen::Matrix3d Rz = Eigen::AngleAxisd(yaw_, Eigen::Vector3d::UnitZ()).matrix();
+        Eigen::Matrix3d Ry = Eigen::AngleAxisd(1.*pitch_, Eigen::Vector3d::UnitY()).matrix();
+        Eigen::Matrix3d Rx = Eigen::AngleAxisd(1.*roll_, Eigen::Vector3d::UnitX()).matrix();
+        Eigen::Matrix3d R = Ry; //* Rx;
+        
+        for (Eigen::Vector3d& beam : ping.beams) {
+            //beam = beam - ping.pos_;
+            //Rz = Eigen::AngleAxisd(-ping.heading_, Eigen::Vector3d::UnitZ()).matrix();
+            // beam = Rz.transpose()*(beam - ping.pos_);
+            //Eigen::Matrix3d R = Rx*Ry*Rz;
+            beam = R*beam; // + Eigen::Vector3d(0., 0., -heave);
+        }
+    }
     return pings;
 }
 
 
-all_mbes_ping::PingsT raw_pings_add_transducer_depth_and_heading_to_pings(all_mbes_ping::PingsT & raw_pings, all_mbes_ping::PingsT& depth_pings){
+all_mbes_ping::PingsT raw_pings_add_transducer_depth_and_heading_to_pings(all_mbes_ping::PingsT & raw_pings, all_nav_entry::EntriesT& entries){
     all_mbes_ping::PingsT new_pings;
     new_pings.reserve(raw_pings.size());
 
     std::stable_sort(raw_pings.begin(), raw_pings.end(), [](const all_mbes_ping& raw_pings1, const all_mbes_ping& raw_pings2) {
         return raw_pings1.time_stamp_ < raw_pings2.time_stamp_;
     });
-    std::stable_sort(depth_pings.begin(), depth_pings.end(), [](const all_mbes_ping& ping1, const all_mbes_ping& ping2) {
-        return ping1.time_stamp_ < ping2.time_stamp_;
+    std::stable_sort(entries.begin(), entries.end(), [](const all_nav_entry& entry1, const all_nav_entry& entry2) {
+        return entry1.time_stamp_ < entry2.time_stamp_;
     });
 
-    auto pos = depth_pings.begin();
+    auto pos = entries.begin();
     for (all_mbes_ping& ping : raw_pings) {
-        pos = std::find_if(pos, depth_pings.end(), [&](const all_mbes_ping& depth_ping) {
-            return depth_ping.time_stamp_ > ping.time_stamp_;
+        pos = std::find_if(pos, entries.end(), [&](const all_nav_entry& entry) {
+            return entry.time_stamp_ > ping.time_stamp_;
         });
 
         all_mbes_ping new_ping;
@@ -687,21 +734,20 @@ all_mbes_ping::PingsT raw_pings_add_transducer_depth_and_heading_to_pings(all_mb
         new_ping.sound_vel_ = ping.sound_vel_;
         new_ping.beams = ping.beams;
         new_ping.reflectivities = ping.reflectivities;
-        // new_ping.heading_ = ping.heading_;
 
-        if (pos == depth_pings.end()) {
-            new_ping.heading_ = depth_pings.back().heading_;
-            new_ping.transducer_depth_ = depth_pings.back().transducer_depth_;
+        if (pos == entries.end()) {
+            new_ping.heading_ = entries.back().heading_;
+            new_ping.transducer_depth_ = entries.back().depth_;
         }
-        else if (pos == depth_pings.begin()) {
+        else if (pos == entries.begin()) {
             new_ping.heading_ = pos->heading_;
-            new_ping.transducer_depth_ =pos->transducer_depth_;
+            new_ping.transducer_depth_ =pos->depth_;
         }
         else {
-            all_mbes_ping& previous = *(pos - 1);
+            all_nav_entry& previous = *(pos - 1);
             double ratio = double(ping.time_stamp_ - previous.time_stamp_)/double(pos->time_stamp_ - previous.time_stamp_);
             double heading_ = previous.heading_ + ratio*(pos->heading_ - previous.heading_);
-            double transducer_depth_ = previous.transducer_depth_ + ratio*(pos->transducer_depth_ - previous.transducer_depth_);
+            double transducer_depth_ = previous.depth_ + ratio*(pos->depth_ - previous.depth_);
             new_ping.heading_ = heading_;
             new_ping.transducer_depth_ = transducer_depth_;
         }
@@ -710,11 +756,11 @@ all_mbes_ping::PingsT raw_pings_add_transducer_depth_and_heading_to_pings(all_mb
     return new_pings;
 }
 
-std_data::mbes_ping::PingsT raw_pings_match_attitude_and_entries(all_mbes_ping::PingsT& pings, all_nav_attitude::EntriesT& attitude_entries, all_nav_entry::EntriesT& entries){ 
-    mbes_ping::PingsT new_pings = convert_matched_entries(pings, entries);
-    new_pings = match_attitude(new_pings, attitude_entries);
-    return new_pings;
-}
+// std_data::mbes_ping::PingsT raw_pings_match_attitude_and_entries(all_mbes_ping::PingsT& pings, all_nav_attitude::EntriesT& attitude_entries, all_nav_entry::EntriesT& entries){ 
+//     mbes_ping::PingsT new_pings = convert_matched_entries(pings, entries);
+//     new_pings = match_attitude(new_pings, attitude_entries);
+//     return new_pings;
+// }
 
 // function 1: input: all_raw_range_and_beam_angle, attitude info
 // return: all_mbes_ping. roll/pitch corrected all_mbes_ping without depth and heading 
