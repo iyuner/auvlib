@@ -626,9 +626,9 @@ std_data::attitude_entry::EntriesT convert_attitudes(const all_nav_attitude::Ent
 all_mbes_ping::PingsT raw_range_and_beam_angle_convert_to_pings(all_raw_range_and_beam_angle::EntriesT & raws, all_nav_attitude::EntriesT& attitude_entries){
     // according to the RX array offset in Appendix A of all file specification
     // unit in m.
-    double offset_x = 0.11; // positive direction is forward
-    double offset_y = 0.0;
-    double offset_z = -6.0; // positive direction is downwards, so there RX is mounted above the RX array
+    double offset_x = 0.011; // positive direction is forward
+    double offset_y = 0.000;
+    double offset_z = -0.006; // positive direction is downwards, so there RX is mounted above the RX array
 
     all_mbes_ping::PingsT pings;
     for (auto & raw: raws){
@@ -644,7 +644,7 @@ all_mbes_ping::PingsT raw_range_and_beam_angle_convert_to_pings(all_raw_range_an
             // two_way_tranvel_time_ in s
             double beam_pointing_angle_ = beam.beam_pointing_angle_ * 0.01 / 180.0 * M_PI; // unit 1 rad
             double one_way_distance = 0.1* raw.sound_vel_ * 0.5 * beam.two_way_tranvel_time_; // in m
-            Eigen::Vector3d point(offset_x + 0, offset_y + one_way_distance*sin(beam_pointing_angle_), offset_z + -one_way_distance*cos(beam_pointing_angle_));
+            Eigen::Vector3d point(offset_x + 0, offset_y + one_way_distance*sin(beam_pointing_angle_), offset_z + one_way_distance*cos(beam_pointing_angle_));
             ping.beams.push_back(point);
             ping.reflectivities.push_back(beam.reflectivity_);
         }
@@ -696,7 +696,7 @@ all_mbes_ping::PingsT raw_range_and_beam_angle_convert_to_pings(all_raw_range_an
         Eigen::Matrix3d Rz = Eigen::AngleAxisd(yaw_, Eigen::Vector3d::UnitZ()).matrix();
         Eigen::Matrix3d Ry = Eigen::AngleAxisd(1.*pitch_, Eigen::Vector3d::UnitY()).matrix();
         Eigen::Matrix3d Rx = Eigen::AngleAxisd(1.*roll_, Eigen::Vector3d::UnitX()).matrix();
-        Eigen::Matrix3d R = Ry; //* Rx;
+        Eigen::Matrix3d R = Ry* Rx; //
         
         for (Eigen::Vector3d& beam : ping.beams) {
             //beam = beam - ping.pos_;
