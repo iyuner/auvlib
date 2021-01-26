@@ -146,6 +146,7 @@ PYBIND11_MODULE(all_data, m) {
     m.def("raw_range_and_beam_angle_convert_to_pings", &raw_range_and_beam_angle_convert_to_pings, "Convert raw_range_and_beam_angle_convert_to_pings::EntriesT to all_mbes_ping::PingsT");
     // m.def("raw_pings_match_attitude_and_entries", &raw_pings_match_attitude_and_entries, "TBD");
     m.def("raw_pings_add_transducer_depth_and_heading_to_pings", &raw_pings_add_transducer_depth_and_heading_to_pings, "TBD");
+    m.def("raw_convert_matched_entries", &raw_convert_matched_entries, "TBD");
     
 
     py::class_<StreamParser>(m, "StreamParser", "Class for parsing all data directly from a network stream")
