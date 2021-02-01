@@ -242,7 +242,6 @@ PACK(struct all_installation_para_datagram {
     // ASCII
     
     // unsigned char spare; // not necessary, needed if to get even length, 
-
     // end of repeat cycle, see all_common_end
 });
 
