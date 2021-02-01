@@ -626,10 +626,13 @@ std_data::attitude_entry::EntriesT convert_attitudes(const all_nav_attitude::Ent
 all_mbes_ping::PingsT raw_range_and_beam_angle_convert_to_pings(all_raw_range_and_beam_angle::EntriesT & raws, all_nav_attitude::EntriesT& attitude_entries){
     // according to the RX array offset in Appendix A of all file specification
     // unit in m.
-    double offset_x = 0.011; // positive direction is forward
-    double offset_y = 0.000;
-    double offset_z = -0.006; // positive direction is downwards, so there RX is mounted above the RX array
-
+    double S2X=3.520;
+    double S2Y=-0.004;
+    double S2Z=0.330;
+    double offset_x = 0.011 + S2X; // positive direction is forward
+    double offset_y = 0.000 + S2Y;
+    double offset_z = -0.006 + S2Z; // positive direction is downwards, so there RX is mounted above the RX array
+    
     all_mbes_ping::PingsT pings;
     for (auto & raw: raws){
         all_mbes_ping ping;
