@@ -623,6 +623,10 @@ std_data::attitude_entry::EntriesT convert_attitudes(const all_nav_attitude::Ent
 // ------------------------------------------------------------------------------------------------------------------------------------------------
 // ------------------------------------------------                   New added          ----------------------------------------------------------
 // ------------------------------------------------------------------------------------------------------------------------------------------------
+// input: all_raw_range_and_beam_angle, attitude info
+// return: all_mbes_ping. roll/pitch corrected all_mbes_ping without depth and heading 
+// apply roll/pitch to raw range to get a roll/pitch corrected all_mbes_ping
+// coordinate (x, y, z) is defined as (forward, right, down) 
 all_mbes_ping::PingsT raw_range_and_beam_angle_convert_to_pings(all_raw_range_and_beam_angle::EntriesT & raws, all_nav_attitude::EntriesT& attitude_entries){
     // according to the RX array offset in Appendix A of all file specification
     // unit in m.
@@ -712,7 +716,9 @@ all_mbes_ping::PingsT raw_range_and_beam_angle_convert_to_pings(all_raw_range_an
     return pings;
 }
 
-
+// output: all_mbes_ping
+// get depth and heading from all_nav_entry
+// coordinate (x, y, z) is defined as (forward, right, down) 
 all_mbes_ping::PingsT raw_pings_add_transducer_depth_and_heading_to_pings(all_mbes_ping::PingsT & raw_pings, all_nav_entry::EntriesT& entries){
     all_mbes_ping::PingsT new_pings;
     new_pings.reserve(raw_pings.size());
@@ -737,19 +743,20 @@ all_mbes_ping::PingsT raw_pings_add_transducer_depth_and_heading_to_pings(all_mb
         new_ping.sound_vel_ = ping.sound_vel_;
         new_ping.beams = ping.beams;
         new_ping.reflectivities = ping.reflectivities;
-
+        // the reason of using (0.5*M_PI - ) is to convert the heading back to the original one. 
+        // Since in the read_datagram of all_nav_entry it is processed with (0.5*M_PI - )
         if (pos == entries.end()) {
-            new_ping.heading_ = entries.back().heading_;
+            new_ping.heading_ = 0.5*M_PI - entries.back().heading_;
             new_ping.transducer_depth_ = entries.back().depth_;
         }
         else if (pos == entries.begin()) {
-            new_ping.heading_ = pos->heading_;
+            new_ping.heading_ =  0.5*M_PI - pos->heading_;
             new_ping.transducer_depth_ =pos->depth_;
         }
         else {
             all_nav_entry& previous = *(pos - 1);
             double ratio = double(ping.time_stamp_ - previous.time_stamp_)/double(pos->time_stamp_ - previous.time_stamp_);
-            double heading_ = previous.heading_ + ratio*(pos->heading_ - previous.heading_);
+            double heading_ = 0.5*M_PI - previous.heading_ + ratio*((0.5*M_PI - pos->heading_) - (0.5*M_PI - previous.heading_));
             double transducer_depth_ = previous.depth_ + ratio*(pos->depth_ - previous.depth_);
             new_ping.heading_ = heading_;
             new_ping.transducer_depth_ = transducer_depth_;
@@ -759,21 +766,7 @@ all_mbes_ping::PingsT raw_pings_add_transducer_depth_and_heading_to_pings(all_mb
     return new_pings;
 }
 
-// std_data::mbes_ping::PingsT raw_pings_match_attitude_and_entries(all_mbes_ping::PingsT& pings, all_nav_attitude::EntriesT& attitude_entries, all_nav_entry::EntriesT& entries){ 
-//     mbes_ping::PingsT new_pings = convert_matched_entries(pings, entries);
-//     new_pings = match_attitude(new_pings, attitude_entries);
-//     return new_pings;
-// }
-
-// function 1: input: all_raw_range_and_beam_angle, attitude info
-// return: all_mbes_ping. roll/pitch corrected all_mbes_ping without depth and heading 
-// apply roll/pitch to raw range to get a roll/pitch corrected all_mbes_ping, 
-
-// output: all_mbes_ping
-// function 2: get depth and heading from all_nav_entry
-
-// convert_matched_entries
-
+// convert the (x, y, z) is defined as (vehicle forward, vehicle right hand, down) ->  (x, y, z) = (east, north, up)
 mbes_ping::PingsT raw_convert_matched_entries(all_mbes_ping::PingsT& pings, all_nav_entry::EntriesT& entries)
 {
     mbes_ping::PingsT new_pings;
@@ -803,7 +796,6 @@ mbes_ping::PingsT raw_convert_matched_entries(all_mbes_ping::PingsT& pings, all_
             double easting, northing;
             string utm_zone;
             tie(northing, easting, utm_zone) = lat_long_utm::lat_long_to_UTM(entries.back().lat_, entries.back().long_);
-            //new_ping.pos_ = Eigen::Vector3d(easting, northing, -ping.transducer_depth_);
             new_ping.pos_ = Eigen::Vector3d(northing, easting, ping.transducer_depth_);
         }
         else {
@@ -812,7 +804,6 @@ mbes_ping::PingsT raw_convert_matched_entries(all_mbes_ping::PingsT& pings, all_
                 string utm_zone;
                 tie(northing, easting, utm_zone) = lat_long_utm::lat_long_to_UTM(pos->lat_, pos->long_);
                 new_ping.pos_ = Eigen::Vector3d(northing, easting, ping.transducer_depth_);
-                //new_ping.pos_ = Eigen::Vector3d(easting, northing, -pos->depth_);
             }
             else {
                 all_nav_entry& previous = *(pos - 1);
@@ -824,41 +815,49 @@ mbes_ping::PingsT raw_convert_matched_entries(all_mbes_ping::PingsT& pings, all_
                 string utm_zone;
                 tie(northing, easting, utm_zone) = lat_long_utm::lat_long_to_UTM(lat, lon);
                 new_ping.pos_ = Eigen::Vector3d(northing, easting, ping.transducer_depth_);
-                //cout << "Filtered depth: " << depth << ", transducer depth: " << ping.transducer_depth_ << endl;
-                //new_ping.pos_ = Eigen::Vector3d(easting, northing, -depth);
             }
         }
 
         new_ping.beams.reserve(ping.beams.size());
         new_ping.back_scatter.reserve(ping.beams.size());
         int i = 0;
-        //cout << "Ping heading: " << new_ping.heading_ << endl;
         for (const Eigen::Vector3d& beam : ping.beams) {
-            /*if (beam(2) > -5. || beam(2) < -25.) {
-                ++i;
-                continue;
-            }*/
-            // it seems it has already been compensated for pitch, roll
             double heading = new_ping.heading_ * (-1.0);
             Eigen::Matrix3d Rz = Eigen::AngleAxisd(heading, Eigen::Vector3d::UnitZ()).matrix();
             // before heading rotation, coor is (x, y, z) = (vehicle forward, vehicle right hand, down)
             // current coor is (x, y, z) = (north, east, down)
             Eigen::Vector3d vehicle_coor =  new_ping.pos_ + Rz*beam;
-            
             // convert to (x, y, z) = (east, north, up)
             new_ping.beams.push_back( Eigen::Vector3d(vehicle_coor[1], vehicle_coor[0], -vehicle_coor[2]));
             //new_ping.beams.push_back(new_ping.pos_ + beam);
             new_ping.back_scatter.push_back(ping.reflectivities[i]);
+            
             ++i;
         }
-
+        
+        // convert pos_ from (northing, easting, down)
+        // to (easting, northing, up)
+        new_ping.pos_ = Eigen::Vector3d(new_ping.pos_[1], new_ping.pos_[0], -ping.transducer_depth_);
+        new_ping.heading_ = 0.5*M_PI - new_ping.heading_;
+        
         new_pings.push_back(new_ping);
     }
 
     return new_pings;
 }
 
-
+// conver the output from raw_pings_add_transducer_depth_and_heading_to_pings
+// to the same direction defined in the read_datagram of xyz88 data
+all_mbes_ping::PingsT raw_pings_rotate_to_xyz88_direction(all_mbes_ping::PingsT & raw_pings){
+    all_mbes_ping::PingsT res = raw_pings;
+    for (auto & ping : res){
+        ping.heading_ = 0.5*M_PI - ping.heading_;
+        for (auto & point : ping.beams){
+            point = Eigen::Vector3d(point[0], -point[1], -point[2]);
+        }
+    }
+    return res;
+}
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------
 // ------------------------------------------------             New added (end)          ----------------------------------------------------------
