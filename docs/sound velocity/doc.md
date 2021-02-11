@@ -30,7 +30,7 @@
   - use two kinds of depth to look: 
     1. transducer depth ~[56.147987365722656, 75.08687591552734] m, distance from the sea level to auv.
     2.  sea floor underneath (calculate the z when y = 0 to get the distance between the auv and sea floor, add it with transducer depth to get total distance). *The plot Python script can be found at ```sound_velocity.py -> plot_soundSpeed_vs_depth()```.*
-      <img src="figures/sp_in_mbes.png" alt="sp_in_mbes" style="zoom: 40%;" />
+      <img src="figures/sp_in_mbes.png" alt="sp_in_mbes" width="700" />
   - Note that for other .all file, Mission_58_20190618_6/EM2040-0013... & Mission_58_20190618_6/EM2040-0014.... The sound velocity looks in the same interval.
   - The sound velocities saved in XYZ88 datagram are discrete values, and they are almost constant of 1477.7 m/s (unit is dm/s in the figure).
 
@@ -121,15 +121,16 @@ Since as it shows [In XYZ88 datagram](#in-xyz88-datagram), in this case, the sou
 - The following figure shows how the height map & overlapping area of the three lines(files) look like at the sound velocity of 1230 m/s (optimum calculated by the *auvlib.benchmark*), and 1480 m/s(close to the original sound velocity).
   - 1230 m/s
   
-    ![default_method_023_mean_depth](figures/default_method_023_mean_depth.png)
-    ![default_method_023_rms_consistency_error](figures/default_method_023_rms_consistency_error.png)
+    <figure class="half">
+      <img src="figures/default_method_023_mean_depth.png" alt="default_method_023_mean_depth" width="420" />
+      <img src="figures/default_method_023_rms_consistency_error.png" alt="default_method_023_rms_consistency_error" width="420"/>
+    </figure>
   - 1480 m/s
   
-    ![default_method_048_mean_depth](figures/default_method_048_mean_depth.png)
-    ![default_method_048_rms_consistency_error](figures/default_method_048_rms_consistency_error.png)
-
-
-
+    <figure class="half">
+      <img src="figures/default_method_048_mean_depth.png" alt="default_method_048_mean_depth" width="420" />
+      <img src="figures/default_method_048_rms_consistency_error.png" alt="default_method_048_rms_consistency_error" width="420"/>
+    </figure>
 
 ## 4.2. Use raw range and angle data
 ### 4.2.1. Data process
@@ -160,20 +161,24 @@ Since as it shows [In XYZ88 datagram](#in-xyz88-datagram), in this case, the sou
 ### 4.2.2. Reconstruct result and comparison
 Following figures are created by ```read_sound_velocity.py -> plot_raw_mesh_file()```. More details please see the Python code.
 - Height map of one all file, eg from *Mission_58_20190618_6/EM2040-0012-l02s01-20190618-174142.all*. *The plot Python script can be found at ```sound_velocity.py -> plot_raw_mesh_file_of_one_file()```.*
-  - original from XYZ88 data
-  
-    ![height_map_from_xyz88](figures/height_map_from_xyz88.png) 
-  - reconstruct from raw range and angle data
-  
-    ![height_map_from_raw_data_original_convert_function](figures/height_map_from_raw_data_original_convert_function.png)
+  - original from XYZ88 data (left) & reconstruct from raw range and angle data (right)
+    <figure class="half">
+      <img src="figures/height_map_from_xyz88.png" alt="height_map_from_xyz88" width="420" />
+      <img src="figures/height_map_from_raw_data_original_convert_function.png" alt="height_map_from_raw_data_original_convert_function" width="420"/>
+    </figure>
 
 - Height map & mesh of adding three all files together. *The plot Python script can be found at ```sound_velocity.py -> plot_raw_mesh_file_of_all_files_in_the_folder()```.*
   - original from XYZ88 data
   
-    ![3_height_map_from_xyz88](figures/3_height_map_from_xyz88.png)
-    ![3-raw_data_orig_convert](figures/3-raw_data_orig_convert.png)
+    <figure class="half">
+      <img src="figures/3_height_map_from_xyz88.png" alt="3_height_map_from_xyz88" width="430" />
+      <img src="figures/3-xyz.png" alt="3-xyz" width="430"/>
+    </figure>
+    
   - reconstruct from raw range and angle data
-
-    ![height_map_from_raw_data_original_convert_function](figures/3_height_map_from_raw_data_original_convert_function.png)
-    ![3-xyz](figures/3-xyz.png)
+  
+    <figure class="half">
+      <img src="figures/3_height_map_from_raw_data_original_convert_function.png" alt="3_height_map_from_raw_data_original_convert_function" width="430" />
+      <img src="figures/3-raw_data_orig_convert.png" alt="3-raw_data_orig_convert" width="430"/>
+    </figure>
 
