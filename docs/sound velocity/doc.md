@@ -166,7 +166,6 @@ Following figures are created by ```read_sound_velocity.py -> plot_raw_mesh_file
   - original from XYZ88 data
     ![3_height_map_from_xyz88](figures/3_height_map_from_xyz88.png)
     ![3-raw_data_orig_convert](figures/3-raw_data_orig_convert.png)
-    /home/carol/AUV/auvlib/docs/sound velocity/figures/3-raw_data_orig_convert.png
   - reconstruct from raw range and angle data
     ![height_map_from_raw_data_original_convert_function](figures/3_height_map_from_raw_data_original_convert_function.png)
     ![3-xyz](figures/3-xyz.png)
