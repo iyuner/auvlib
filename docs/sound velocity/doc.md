@@ -120,10 +120,13 @@ Since as it shows [In XYZ88 datagram](#in-xyz88-datagram), in this case, the sou
   <img src="figures/data_all_considering_offset.png" alt="data_all" style="zoom:40%;" />
 - The following figure shows how the height map & overlapping area of the three lines(files) look like at the sound velocity of 1230 m/s (optimum calculated by the *auvlib.benchmark*), and 1480 m/s(close to the original sound velocity).
   - 1230 m/s
-  ![default_method_023_mean_depth](figures/default_method_023_mean_depth.png)![default_method_023_rms_consistency_error](figures/default_method_023_rms_consistency_error.png)
+  
+    ![default_method_023_mean_depth](figures/default_method_023_mean_depth.png)
+    ![default_method_023_rms_consistency_error](figures/default_method_023_rms_consistency_error.png)
   - 1480 m/s
-  ![default_method_048_mean_depth](figures/default_method_048_mean_depth.png)
-  ![default_method_048_rms_consistency_error](figures/default_method_048_rms_consistency_error.png)
+  
+    ![default_method_048_mean_depth](figures/default_method_048_mean_depth.png)
+    ![default_method_048_rms_consistency_error](figures/default_method_048_rms_consistency_error.png)
 
 
 
@@ -158,15 +161,19 @@ Since as it shows [In XYZ88 datagram](#in-xyz88-datagram), in this case, the sou
 Following figures are created by ```read_sound_velocity.py -> plot_raw_mesh_file()```. More details please see the Python code.
 - Height map of one all file, eg from *Mission_58_20190618_6/EM2040-0012-l02s01-20190618-174142.all*. *The plot Python script can be found at ```sound_velocity.py -> plot_raw_mesh_file_of_one_file()```.*
   - original from XYZ88 data
+  
     ![height_map_from_xyz88](figures/height_map_from_xyz88.png) 
   - reconstruct from raw range and angle data
+  
     ![height_map_from_raw_data_original_convert_function](figures/height_map_from_raw_data_original_convert_function.png)
 
 - Height map & mesh of adding three all files together. *The plot Python script can be found at ```sound_velocity.py -> plot_raw_mesh_file_of_all_files_in_the_folder()```.*
   - original from XYZ88 data
+  
     ![3_height_map_from_xyz88](figures/3_height_map_from_xyz88.png)
     ![3-raw_data_orig_convert](figures/3-raw_data_orig_convert.png)
   - reconstruct from raw range and angle data
+
     ![height_map_from_raw_data_original_convert_function](figures/3_height_map_from_raw_data_original_convert_function.png)
     ![3-xyz](figures/3-xyz.png)
 
